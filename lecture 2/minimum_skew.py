@@ -8,7 +8,8 @@ def deamination (g):
     }
     return dics[g]
 
-def minimumSkew(t):
+
+def minimum_skew(t):
     min_skew = []
     min_skew_val = 0
     current_skew_val = 0
@@ -21,7 +22,4 @@ def minimumSkew(t):
         elif current_skew_val == min_skew_val:
             min_skew.append(i+1)
     return min_skew
-
-t = 'GATACACTTCCCGAGTAGGTACTG'
-print(minimumSkew(t))
 

@@ -1,7 +1,7 @@
 #Given strings Text and Pattern as well as an integer d, we define Countd(Text, Pattern) as the total number of occurrences of Pattern in Text with at most d mismatches
-from approximate_occurance import approximateOccurance
+from approximate_occurance import approximate_occurrence
 def frequentWordMismatch (p,t,d):
-    occurance = approximateOccurance(p,t,d)
+    occurance = approximate_occurrence(p, t, d)
     return len(occurance)
 
 #testing
