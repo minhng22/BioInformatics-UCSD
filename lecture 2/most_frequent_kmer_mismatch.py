@@ -21,4 +21,4 @@ def frequent_kmer_mismatch(text, k, d):
     for n in neighborhoods:
         if neighborhoods[n] == max_occ:
             frequent_patterns.append(n)
-    return len(frequent_patterns)
+    return frequent_patterns

@@ -5,7 +5,7 @@
 from hamming_distance import hamming_distance
 
 
-def approximate_occurrence(p, t, d):
+def approximate_occurrence(p: str, t: str, d: int) -> list:
     o = []
     for i in range(len(t) - len(p) + 1):
         if hamming_distance(p, t[i: i + len(p)]) <= d:
@@ -13,5 +13,5 @@ def approximate_occurrence(p, t, d):
     return o
 
 
-def approximate_occurrence_count(p, t, d):
+def approximate_occurrence_count(p: str, t: str, d: int) -> int:
     return len(approximate_occurrence(p, t, d))
