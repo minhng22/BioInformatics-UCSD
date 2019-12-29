@@ -1,7 +1,0 @@
-from motif_enumeration import motif_enumeration
-m = motif_enumeration([
-    'AAGACCCGGGACCAGGCGGAACAGA', 'ATATTGTCGCCACTCACTACTCGAA', 'TGAGAGCCATACGCAATACAGGTAT',
-    'GTAGTACGTAACTTTCGAACTTTGG', 'CTTACGACAGACGTAAGTGACATGT', 'CTGTCCCGCACACTCCGAAGTCTGC'
-], 5, 2)
-for i in m:
-    print(i, end=" ")
