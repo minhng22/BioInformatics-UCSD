@@ -382,7 +382,7 @@ def two_d_array_to_matrix(profiles: list) -> dict():
     return profile_arr
 
 
-def profile_most_problem(text: str, k: int, profiles: list) -> str:
+def profile_most_probable_kmer_problem(text: str, k: int, profiles: list) -> str:
     max_k_mer_val = 0
     max_k_mer = ""
     profile_arr = two_d_array_to_matrix(profiles)
@@ -444,3 +444,40 @@ def find_consensus_str(profile: dict) -> list:
             dna += letter
         c_matrices.append(dna)
     return c_matrices
+
+# Week 4
+
+
+# Implement RandomizedMotifSearch.
+#
+# Input: Integers k and t, followed by a collection of strings Dna.
+# Output: A collection BestMotifs resulting from running RandomizedMotifSearch(Dna, k, t) 1,000 times.
+#   Remember to use pseudocounts!
+# Sample Input:
+# 8 5
+# CGCCCCTCTCGGGGGTGTTCAGTAAACGGCCA
+# GGGCGAGGTATGTGTAAGTGCCAAGGTGCCAG
+# TAGTACCGAGACCGAAAGAAGTATACAGGCGT
+# TAGATCAAGTTTCAGGTGCACGTCGGTGAACC
+# AATCCACCAGCTCCACGTGCAATGTTGGCCTA
+# Sample Output:
+# TCTCGGGG
+# CCAAGGTG
+# TACAGGCG
+# TTCAGGTG
+# TCCACGTG
+def randomized_motif_research(k: int, t: int, dna: list) -> list:
+    motif = random_motif(dna)
+    best_motif = motif
+    looping = True
+    while looping:
+        profile = profile_most_probable_kmer_problem(motif)
+        motif = motif(profile, dna)
+        if motif_scoring(motif) < motif_scoring(best_motif):
+            best_motif = motif
+        elif motif_scoring(motif) == motif_scoring(best_motif):
+            looping = False
+    return best_motif
+
+
+def random_motif(dna: list) -> str:
