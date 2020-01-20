@@ -1,6 +1,8 @@
 import sys
 import math
+import random
 import itertools
+import copy
 
 # Week 1
 
@@ -295,7 +297,6 @@ def motif_enumeration(texts, k, d):
 def motif_scoring(motifs: list) -> float:
     score = 0
     for i in range(len(motifs[0])):
-        local_score = 0
         prob = dict()
         prob['A'] = 0
         prob['C'] = 0
@@ -309,8 +310,7 @@ def motif_scoring(motifs: list) -> float:
             total_appearance += prob[letter]
             if max_appearance < prob[letter]:
                 max_appearance = prob[letter]
-        local_score = total_appearance - max_appearance
-    score += local_score
+        score += total_appearance - max_appearance
     return score
 
 
@@ -325,27 +325,57 @@ def list_entropy(values: list) -> float:
     return total_entropy
 
 
+"""
+The entropy of a motif matrix is defined as the sum of the entropies of its columns.
+"""
 def motif_matrix_entropy(motifs: list) -> float:
-    profile = {}
-    # check that all motifs are the same length
-    list_length = len(motifs)
-    l1 = len(motifs[1])  # length of the first motif
-    nuc_dict = 'ACGT'
-
-    for i in range(len(motifs)):
-        if len(motifs[i]) != l1:
-            short_motif = motifs[i]
-            short_motif_len = len(short_motif)
-            print('Oops, Motif {} is {} nucleotides instead of {}!'.format(short_motif, short_motif_len, l1))
-            break
-
-    # fill all positions with frequency of 0
-    for nucleotide in nuc_dict:
-        values = [0] * l1
-        profile[nucleotide] = values
-
+    profile = generate_profile_from_motif(motifs)
     # iterate through each position in the motif matrix, counting nucleotide frequencies
     total_entropy = 0
+    for key, values in profile.items():
+        # calculate total entropy (Sum of (Prob_value * log2 Prob_n))
+        total_entropy += list_entropy(values)
+    return total_entropy
+
+
+"""
+Generate profiles from motifs.
+Ex:
+Input: Motifs = [
+    "TCGGGGGTTTTT",
+    "CCGGTGACTTAC",
+    "ACGGGGATTTTC",
+    "TTGGGGACTTTT",
+    "AAGGGGACTTCC",
+    "TTGGGGACTTCC",
+    "TCGGGGATTCAT",
+    "TCGGGGATTCCT",
+    "TAGGGGAACTAC",
+    "TCGGGTATAACC"
+]
+Output: 
+profile = {
+    'A': [0.2, 0.2, 0.0, 0.0, 0.0, 0.0, 0.9, 0.1, 0.1, 0.1, 0.3, 0.0],
+    'C': [0.1, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.4, 0.1, 0.2, 0.4, 0.6],
+    'G': [0.0, 0.0, 1.0, 1.0, 0.9, 0.9, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0],
+    'T': [0.7, 0.2, 0.0, 0.0, 0.1, 0.1, 0.0, 0.5, 0.8, 0.7, 0.3, 0.4]
+}
+"""
+def generate_profile_from_motif(motifs: list) -> dict:
+    profile = {}
+    len_motif = len(motifs[0])  # length of the first motif
+    nuc_dict = 'ACGT'
+    for i in range(len(motifs)):
+        if len(motifs[i]) != len_motif:
+            short_motif = motifs[i]
+            short_motif_len = len(short_motif)
+            print('Oops, Motif {} is {} nucleotides instead of {}!'.format(short_motif, short_motif_len, len_motif))
+            break
+    # fill all positions with frequency of 0
+    for nucleotide in nuc_dict:
+        values = [0] * len_motif
+        profile[nucleotide] = values
+
     for key, values in profile.items():
         for motif in motifs:
             for i in range(len(motif)):
@@ -354,12 +384,9 @@ def motif_matrix_entropy(motifs: list) -> float:
 
         # convert nucleotide frequencies to probabilities
         for i in range(len(values)):
-            profile[key][i] = profile[key][i] / float(list_length)
+            profile[key][i] = profile[key][i] / float(len(motifs))
 
-        # calculate total entropy (Sum of (Prob_value * log2 Prob_n))
-        total_entropy += list_entropy(values)
-
-    return total_entropy
+    return profile
 
 
 def pattern_and_string_distance(pattern: str, dna: str) -> int:
@@ -370,9 +397,17 @@ def pattern_and_string_distance(pattern: str, dna: str) -> int:
     return total_h_distance
 
 
-# Profile-most Probable k-mer Problem: Find a Profile-most probable k-mer in a string.
-# Input: A string Text, an integer k, and a 4 × k matrix Profile.
-# Output: A Profile-most probable k-mer in Text.
+"""
+Take list of profiles and return matrix of nucleotide
+Ex: 
+Input: [[7 1], [2 2], [3 3]. [5 6]]
+Output: {
+'A': [7 1]
+'C': [2 2],
+'G': [3 3],
+'T': [5 6]
+} 
+"""
 def two_d_array_to_matrix(profiles: list) -> dict():
     profile_arr = dict()
     profile_arr['A'] = profiles[0]
@@ -382,17 +417,31 @@ def two_d_array_to_matrix(profiles: list) -> dict():
     return profile_arr
 
 
-def profile_most_probable_kmer_problem(text: str, k: int, profiles: list) -> str:
+"""
+Profile-most Probable k-mer Problem: Find a Profile-most probable k-mer in a string.
+    Input: A string Text, an integer k, and a 4 × k matrix Profile.
+    Output: A Profile-most probable k-mer in Text.
+Ex: SAMPLE DATASET:
+Input: AGCAGCTTTGACTGCAACGGGCAATATGTCTCTGTGTGGATTAAAAAAAGAGTGTCTGATCTGAACTGGTTACCTGCCGTGAGTAAAT
+8
+[[0.7 0.2 0.1 0.5 0.4 0.3 0.2 0.1],
+    [0.2 0.2 0.5 0.4 0.2 0.3 0.1 0.6],
+    [0.1 0.3 0.2 0.1 0.2 0.1 0.4 0.2],
+    [0.0 0.3 0.2 0.0 0.2 0.3 0.3 0.1]]
+Output:
+AGCAGCTT
+"""
+def profile_most_probable_k_mer_problem(text: str, k: int, profiles: dict) -> str:
     max_k_mer_val = 0
     max_k_mer = ""
-    profile_arr = two_d_array_to_matrix(profiles)
+    profile_arr = profiles
 
     for j in range(len(text) - k + 1):
         k_mer = text[j: j + k]
         pr = 1
         for c in range(len(k_mer)):
             pr *= profile_arr[k_mer[c]][c]
-        if max_k_mer_val < pr:
+        if j == 0 or max_k_mer_val < pr:
             max_k_mer_val = pr
             max_k_mer = k_mer
     return max_k_mer
@@ -413,14 +462,17 @@ def profile_probability(k_mer: str, profile: dict) -> float:
     return prob
 
 
-# Input: A dictionary of occurrence. Ex:
-# profile = {
-#         'A': [0.2, 0.2, 0.0, 0.0, 0.0, 0.0, 0.9, 0.1, 0.1, 0.1, 0.3, 0.0],
-#         'C': [0.1, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.4, 0.1, 0.2, 0.4, 0.6],
-#         'G': [0.0, 0.0, 1.0, 1.0, 0.9, 0.9, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0],
-#         'T': [0.7, 0.2, 0.0, 0.0, 0.1, 0.1, 0.0, 0.5, 0.8, 0.7, 0.3, 0.4]
-# }
-# Output: A list of consensus string
+"""
+Input: A dictionary of occurrence. Ex:
+profile = {
+         'A': [0.2, 0.2, 0.0, 0.0, 0.0, 0.0, 0.9],
+         'C': [0.1, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0],
+         'G': [0.0, 0.0, 1.0, 1.0, 0.9, 0.9, 0.1],
+         'T': [0.7, 0.2, 0.0, 0.0, 0.1, 0.1, 0.0]
+ }
+Output: A list of consensus string- string with the same length as profile and each char has the largest appearance
+number. Ex: TCGGGGA
+"""
 def find_consensus_str(profile: dict) -> list:
     length = len(profile['A'])
     c_matrices = []
@@ -445,39 +497,102 @@ def find_consensus_str(profile: dict) -> list:
         c_matrices.append(dna)
     return c_matrices
 
+
+def greedy_motif_search(dna: list, k: int, t: int) -> list:
+    best_motif = [d[0: k] for d in dna]
+    for m in range(len(dna[0]) - k):
+        motives = [dna[0][m: m+k]]
+        for i in range(1, t):
+            profile = generate_profile_from_motif(motives)
+            new_motive = profile_most_probable_k_mer_problem(dna[i], k, profile)
+            motives.append(new_motive)
+        if motif_scoring(motives) < motif_scoring(best_motif):
+            best_motif = motives
+    return best_motif
+
+def greedy_motif_research_file_read():
+    f = open('./lecture_3/greedy_motif_research_dataset.txt', 'r')
+    i, k, t, dna = 0, 0, 0, []
+    for line in f:
+        if i == 0:
+            k = int(line.split()[0])
+            t = int(line.split()[1])
+        else:
+            dna.append(line.rstrip('\n'))
+        i += 1
+    return greedy_motif_search(dna, k, t)
+
+
+def present_list(l: list):
+    for el in l:
+        print(el)
 # Week 4
 
 
-# Implement RandomizedMotifSearch.
-#
-# Input: Integers k and t, followed by a collection of strings Dna.
-# Output: A collection BestMotifs resulting from running RandomizedMotifSearch(Dna, k, t) 1,000 times.
-#   Remember to use pseudocounts!
-# Sample Input:
-# 8 5
-# CGCCCCTCTCGGGGGTGTTCAGTAAACGGCCA
-# GGGCGAGGTATGTGTAAGTGCCAAGGTGCCAG
-# TAGTACCGAGACCGAAAGAAGTATACAGGCGT
-# TAGATCAAGTTTCAGGTGCACGTCGGTGAACC
-# AATCCACCAGCTCCACGTGCAATGTTGGCCTA
-# Sample Output:
-# TCTCGGGG
-# CCAAGGTG
-# TACAGGCG
-# TTCAGGTG
-# TCCACGTG
-def randomized_motif_research(k: int, t: int, dna: list) -> list:
-    motif = random_motif(dna)
-    best_motif = motif
+"""
+Implement RandomizedMotifSearch.
+Input: Integers k and t, followed by a collection of strings Dna.
+Output: A collection BestMotifs resulting from running RandomizedMotifSearch(Dna, k, t) 1,000 times.
+Remember to use pseudocounts!
+Sample Input:
+8 5
+CGCCCCTCTCGGGGGTGTTCAGTAAACGGCCA
+GGGCGAGGTATGTGTAAGTGCCAAGGTGCCAG
+TAGTACCGAGACCGAAAGAAGTATACAGGCGT
+TAGATCAAGTTTCAGGTGCACGTCGGTGAACC
+AATCCACCAGCTCCACGTGCAATGTTGGCCTA
+Sample Output:
+TCTCGGGG
+CCAAGGTG
+TACAGGCG
+TTCAGGTG
+TCCACGTG
+"""
+def randomized_motif_research(k: int, dna: list) -> list:
+    motif = random_motif(dna, k)
+    best_motif = copy.deepcopy(motif)
     looping = True
     while looping:
-        profile = profile_most_probable_kmer_problem(motif)
-        motif = motif(profile, dna)
-        if motif_scoring(motif) < motif_scoring(best_motif):
-            best_motif = motif
-        elif motif_scoring(motif) == motif_scoring(best_motif):
-            looping = False
+        profile = generate_profile_from_motif(copy.deepcopy(motif))
+        motif = motif_from_profile_dna(copy.deepcopy(dna), copy.deepcopy(profile), k)
+        if motif_scoring(copy.deepcopy(motif)) < motif_scoring(copy.deepcopy(best_motif)):
+            best_motif = copy.deepcopy(motif)
+        else:
+            return best_motif
+
+
+def random_motif(dna: list, k: int) -> list:
+    motives = []
+    for d in dna:
+        r = random.randint(0, len(d) - k)
+        motives.append(d[r: r+k])
+    return motives
+
+
+"""
+Generate motif from profile and dna.
+Input: 4xk profile, nxt dna
+Output: nxk motif matrix
+"""
+def motif_from_profile_dna(dna: list, profiles: dict, k: int) -> list:
+    return [profile_most_probable_k_mer_problem(seq, k, profiles) for seq in dna]
+
+
+def switcher_from_profile(profiles: dict) -> list:
+    list_dic = []
+    for i in range(len(profiles['A'])):
+        list_dic.append({
+            'A': profiles['A'][i],
+            'C': profiles['C'][i],
+            'G': profiles['G'][i],
+            'T': profiles['T'][i]
+        })
+    return list_dic
+
+def random_motif_method(k: int, dna: list) -> list :
+    best_motif = randomized_motif_research(k,dna)
+    for i in range(200000):
+        motif = randomized_motif_research(k, dna)
+        if motif_scoring(copy.deepcopy(motif)) < motif_scoring(copy.deepcopy(best_motif)):
+            best_motif = copy.deepcopy(motif)
     return best_motif
-
-
-def random_motif(dna: list) -> str:
